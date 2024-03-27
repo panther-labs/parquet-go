@@ -61,7 +61,7 @@ func (dp *dataPageReaderV2) readValues(size int) (values []interface{}, dLevel *
 
 func (dp *dataPageReaderV2) init(dDecoder, rDecoder getLevelDecoder, values getValueDecoderFn) error {
 	var err error
-	// Page v2 dose not have any encoding for the levels
+	// Page v2 does not have any encoding for the levels
 	dp.dDecoder, err = dDecoder(parquet.Encoding_RLE)
 	if err != nil {
 		return err
@@ -120,6 +120,10 @@ func (dp *dataPageReaderV2) read(r io.Reader, ph *parquet.PageHeader, codec parq
 		if err = dp.dDecoder.init(bytes.NewReader(dataPageBlock[int(ph.DataPageHeaderV2.RepetitionLevelsByteLength):levelsSize])); err != nil {
 			return fmt.Errorf("read definition level failed: %w", err)
 		}
+	}
+
+	if !ph.DataPageHeaderV2.IsCompressed {
+		return dp.valuesDecoder.init(bytes.NewReader(dataPageBlock[levelsSize:]))
 	}
 
 	reader, err := newBlockReader(dataPageBlock[levelsSize:], codec, ph.GetCompressedPageSize()-levelsSize, ph.GetUncompressedPageSize()-levelsSize, dp.alloc)

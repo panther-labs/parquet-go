@@ -122,7 +122,7 @@ func newBlockReader(buf []byte, codec parquet.CompressionCodec, compressedSize i
 	return bytes.NewReader(res), nil
 }
 
-// RegisterBlockCompressor is a function to to register additional block compressors to the package. By default,
+// RegisterBlockCompressor is a function to register additional block compressors to the package. By default,
 // only UNCOMPRESSED, GZIP and SNAPPY are supported as parquet compression algorithms. The parquet file format
 // supports more compression algorithms, such as LZO, BROTLI, LZ4 and ZSTD. To limit the amount of external dependencies,
 // the number of supported algorithms was reduced to a core set. If you want to use any of the other compression
