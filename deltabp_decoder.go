@@ -98,11 +98,11 @@ func (d *deltaBitPackDecoder32) readMiniBlockHeader() error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	for i := range d.miniBlockBitWidth {
-		if d.miniBlockBitWidth[i] > 32 {
-			return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-		}
-	}
+	// for i := range d.miniBlockBitWidth {
+	// 	if d.miniBlockBitWidth[i] > 32 {
+	// 		return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
+	// 	}
+	// }
 
 	// start from the first min block in a big block
 	d.currentMiniBlock = 0
@@ -257,11 +257,11 @@ func (d *deltaBitPackDecoder64) readMiniBlockHeader() error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	for i := range d.miniBlockBitWidth {
-		if d.miniBlockBitWidth[i] > 64 {
-			return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-		}
-	}
+	// for i := range d.miniBlockBitWidth {
+	// 	if d.miniBlockBitWidth[i] > 64 {
+	// 		return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
+	// 	}
+	// }
 
 	// start from the first min block in a big block
 	d.currentMiniBlock = 0
