@@ -41,9 +41,9 @@ func (d *deltaBitPackDecoder32) init(r io.Reader) error {
 		return err
 	}
 
-	if err := d.readMiniBlockHeader(); err != nil {
-		return err
-	}
+	// if err := d.readMiniBlockHeader(); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
