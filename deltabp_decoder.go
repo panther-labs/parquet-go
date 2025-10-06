@@ -41,9 +41,9 @@ func (d *deltaBitPackDecoder32) init(r io.Reader) error {
 		return err
 	}
 
-	// if err := d.readMiniBlockHeader(); err != nil {
-	// 	return err
-	// }
+	if err := d.readMiniBlockHeader(true); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -85,7 +85,7 @@ func (d *deltaBitPackDecoder32) readBlockHeader() error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder32) readMiniBlockHeader() error {
+func (d *deltaBitPackDecoder32) readMiniBlockHeader(init bool) error {
 	var err error
 
 	if d.minDelta, err = readVariant32(d.r); err != nil {
@@ -98,11 +98,13 @@ func (d *deltaBitPackDecoder32) readMiniBlockHeader() error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	// for i := range d.miniBlockBitWidth {
-	// 	if d.miniBlockBitWidth[i] > 32 {
-	// 		return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-	// 	}
-	// }
+	if !init {
+		for i := range d.miniBlockBitWidth {
+			if d.miniBlockBitWidth[i] > 32 {
+				return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
+			}
+		}
+	}
 
 	// start from the first min block in a big block
 	d.currentMiniBlock = 0
@@ -122,7 +124,7 @@ func (d *deltaBitPackDecoder32) next() (int32, error) {
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
-				if err := d.readMiniBlockHeader(); err != nil {
+				if err := d.readMiniBlockHeader(false); err != nil {
 					return 0, err
 				}
 			}
@@ -200,7 +202,7 @@ func (d *deltaBitPackDecoder64) init(r io.Reader) error {
 		return err
 	}
 
-	if err := d.readMiniBlockHeader(); err != nil {
+	if err := d.readMiniBlockHeader(true); err != nil {
 		return err
 	}
 
@@ -244,7 +246,7 @@ func (d *deltaBitPackDecoder64) readBlockHeader() error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder64) readMiniBlockHeader() error {
+func (d *deltaBitPackDecoder64) readMiniBlockHeader(init bool) error {
 	var err error
 
 	if d.minDelta, err = readVariant64(d.r); err != nil {
@@ -257,11 +259,13 @@ func (d *deltaBitPackDecoder64) readMiniBlockHeader() error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	// for i := range d.miniBlockBitWidth {
-	// 	if d.miniBlockBitWidth[i] > 64 {
-	// 		return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-	// 	}
-	// }
+	if !init {
+		for i := range d.miniBlockBitWidth {
+			if d.miniBlockBitWidth[i] > 64 {
+				return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
+			}
+		}
+	}
 
 	// start from the first min block in a big block
 	d.currentMiniBlock = 0
@@ -281,7 +285,7 @@ func (d *deltaBitPackDecoder64) next() (int64, error) {
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
-				if err := d.readMiniBlockHeader(); err != nil {
+				if err := d.readMiniBlockHeader(false); err != nil {
 					return 0, err
 				}
 			}
