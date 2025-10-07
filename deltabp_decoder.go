@@ -30,6 +30,8 @@ type deltaBitPackDecoder32 struct {
 	miniBlockInt32           [8]int32
 }
 
+// unpackInt32Dynamic handles bit widths > 32 using dynamic unpacking
+
 func (d *deltaBitPackDecoder32) initSize(r io.Reader) error {
 	return d.init(r)
 }
@@ -41,8 +43,11 @@ func (d *deltaBitPackDecoder32) init(r io.Reader) error {
 		return err
 	}
 
-	if err := d.readMiniBlockHeader(true); err != nil {
-		return err
+	// If we only have 1 value, there are no deltas to decode, so skip miniblock header
+	if d.valuesCount > 1 {
+		if err := d.readMiniBlockHeader(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -85,7 +90,7 @@ func (d *deltaBitPackDecoder32) readBlockHeader() error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder32) readMiniBlockHeader(init bool) error {
+func (d *deltaBitPackDecoder32) readMiniBlockHeader() error {
 	var err error
 
 	if d.minDelta, err = readVariant32(d.r); err != nil {
@@ -98,11 +103,10 @@ func (d *deltaBitPackDecoder32) readMiniBlockHeader(init bool) error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	if !init {
-		for i := range d.miniBlockBitWidth {
-			if d.miniBlockBitWidth[i] > 32 {
-				return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-			}
+	// Validate bit widths as defense-in-depth (we also check at array access time)
+	for i := range d.miniBlockBitWidth {
+		if d.miniBlockBitWidth[i] > 32 {
+			return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
 		}
 	}
 
@@ -118,18 +122,31 @@ func (d *deltaBitPackDecoder32) next() (int32, error) {
 		return 0, io.EOF
 	}
 
+	// Special case: if we only have 1 value, just return it (no deltas to read)
+	if d.valuesCount == 1 {
+		ret := d.previousValue
+		d.position++
+		return ret, nil
+	}
+
 	// need new byte?
 	if d.position%8 == 0 {
 		// do we need to advance a mini block?
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
-				if err := d.readMiniBlockHeader(false); err != nil {
+				if err := d.readMiniBlockHeader(); err != nil {
 					return 0, err
 				}
 			}
 
 			d.currentMiniBlockBitWidth = d.miniBlockBitWidth[d.currentMiniBlock]
+
+			// Validate bit width is within bounds before using it as array index
+			if int(d.currentMiniBlockBitWidth) >= len(unpack8Int32FuncByWidth) {
+				return 0, fmt.Errorf("invalid miniblock bit width: %d (max supported: %d)", d.currentMiniBlockBitWidth, len(unpack8Int32FuncByWidth)-1)
+			}
+
 			d.currentUnpacker = unpack8Int32FuncByWidth[int(d.currentMiniBlockBitWidth)]
 
 			d.miniBlockPosition = 0
@@ -195,6 +212,8 @@ type deltaBitPackDecoder64 struct {
 	miniBlockInt64           [8]int64
 }
 
+// unpackInt64Dynamic handles bit widths > 64 using dynamic unpacking
+
 func (d *deltaBitPackDecoder64) init(r io.Reader) error {
 	d.r = r
 
@@ -202,8 +221,11 @@ func (d *deltaBitPackDecoder64) init(r io.Reader) error {
 		return err
 	}
 
-	if err := d.readMiniBlockHeader(true); err != nil {
-		return err
+	// If we only have 1 value, there are no deltas to decode, so skip miniblock header
+	if d.valuesCount > 1 {
+		if err := d.readMiniBlockHeader(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -246,7 +268,7 @@ func (d *deltaBitPackDecoder64) readBlockHeader() error {
 	return nil
 }
 
-func (d *deltaBitPackDecoder64) readMiniBlockHeader(init bool) error {
+func (d *deltaBitPackDecoder64) readMiniBlockHeader() error {
 	var err error
 
 	if d.minDelta, err = readVariant64(d.r); err != nil {
@@ -259,11 +281,10 @@ func (d *deltaBitPackDecoder64) readMiniBlockHeader(init bool) error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	if !init {
-		for i := range d.miniBlockBitWidth {
-			if d.miniBlockBitWidth[i] > 64 {
-				return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
-			}
+	// Validate bit widths as defense-in-depth (we also check at array access time)
+	for i := range d.miniBlockBitWidth {
+		if d.miniBlockBitWidth[i] > 64 {
+			return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
 		}
 	}
 
@@ -279,18 +300,31 @@ func (d *deltaBitPackDecoder64) next() (int64, error) {
 		return 0, io.EOF
 	}
 
+	// Special case: if we only have 1 value, just return it (no deltas to read)
+	if d.valuesCount == 1 {
+		ret := d.previousValue
+		d.position++
+		return ret, nil
+	}
+
 	// need new byte?
 	if d.position%8 == 0 {
 		// do we need to advance a mini block?
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
-				if err := d.readMiniBlockHeader(false); err != nil {
+				if err := d.readMiniBlockHeader(); err != nil {
 					return 0, err
 				}
 			}
 
 			d.currentMiniBlockBitWidth = d.miniBlockBitWidth[d.currentMiniBlock]
+
+			// Validate bit width is within bounds before using it as array index
+			if int(d.currentMiniBlockBitWidth) >= len(unpack8Int64FuncByWidth) {
+				return 0, fmt.Errorf("invalid miniblock bit width: %d (max supported: %d)", d.currentMiniBlockBitWidth, len(unpack8Int64FuncByWidth)-1)
+			}
+
 			d.currentUnpacker = unpack8Int64FuncByWidth[int(d.currentMiniBlockBitWidth)]
 
 			d.miniBlockPosition = 0
