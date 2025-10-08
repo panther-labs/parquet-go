@@ -30,8 +30,6 @@ type deltaBitPackDecoder32 struct {
 	miniBlockInt32           [8]int32
 }
 
-// unpackInt32Dynamic handles bit widths > 32 using dynamic unpacking
-
 func (d *deltaBitPackDecoder32) initSize(r io.Reader) error {
 	return d.init(r)
 }
@@ -211,8 +209,6 @@ type deltaBitPackDecoder64 struct {
 	currentUnpacker          unpack8int64Func
 	miniBlockInt64           [8]int64
 }
-
-// unpackInt64Dynamic handles bit widths > 64 using dynamic unpacking
 
 func (d *deltaBitPackDecoder64) init(r io.Reader) error {
 	d.r = r
