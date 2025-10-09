@@ -101,7 +101,7 @@ func (d *deltaBitPackDecoder32) readMiniBlockHeader() error {
 		return fmt.Errorf("not enough data to read all miniblock bit widths: %w", err)
 	}
 
-	// Validate bit widths as defense-in-depth (we also check at array access time)
+	// Validate bit widths to be defensive (we also check at array access time)
 	for i := range d.miniBlockBitWidth {
 		if d.miniBlockBitWidth[i] > 32 {
 			return fmt.Errorf("invalid miniblock bit width: %d", d.miniBlockBitWidth[i])
