@@ -133,6 +133,13 @@ func (d *deltaBitPackDecoder32) next() (int32, error) {
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
+				remainingValues := d.valuesCount - d.position
+				if remainingValues == 1 {
+					// Only 1 value left, no deltas to read, just return the last value
+					ret := d.previousValue
+					d.position++
+					return ret, nil
+				}
 				if err := d.readMiniBlockHeader(); err != nil {
 					return 0, err
 				}
@@ -309,6 +316,13 @@ func (d *deltaBitPackDecoder64) next() (int64, error) {
 		if d.position%d.miniBlockValueCount == 0 {
 			// do we need to advance a big block?
 			if d.currentMiniBlock >= d.miniBlockCount {
+				remainingValues := d.valuesCount - d.position
+				if remainingValues == 1 {
+					// Only 1 value left, no deltas to read, just return the last value
+					ret := d.previousValue
+					d.position++
+					return ret, nil
+				}
 				if err := d.readMiniBlockHeader(); err != nil {
 					return 0, err
 				}
