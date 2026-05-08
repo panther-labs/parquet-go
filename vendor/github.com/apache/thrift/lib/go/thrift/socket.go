@@ -55,7 +55,7 @@ func NewTSocket(hostPort string) (*TSocket, error) {
 //
 // Example:
 //
-//     trans, err := thrift.NewTSocketConf("localhost:9090", &TConfiguration{
+//     trans := thrift.NewTSocketConf("localhost:9090", &TConfiguration{
 //         ConnectTimeout: time.Second, // Use 0 for no timeout
 //         SocketTimeout:  time.Second, // Use 0 for no timeout
 //     })
@@ -194,15 +194,7 @@ func (p *TSocket) IsOpen() bool {
 
 // Closes the socket.
 func (p *TSocket) Close() error {
-	// Close the socket
-	if p.conn != nil {
-		err := p.conn.Close()
-		if err != nil {
-			return err
-		}
-		p.conn = nil
-	}
-	return nil
+	return p.conn.Close()
 }
 
 //Returns the remote address of the socket.
