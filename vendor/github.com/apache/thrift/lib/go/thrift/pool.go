@@ -19,48 +19,51 @@
 
 package thrift
 
-// Type constants in the Thrift protocol
-type TType byte
-
-const (
-	STOP   = 0
-	VOID   = 1
-	BOOL   = 2
-	BYTE   = 3
-	I08    = 3
-	DOUBLE = 4
-	I16    = 6
-	I32    = 8
-	I64    = 10
-	STRING = 11
-	UTF7   = 11
-	STRUCT = 12
-	MAP    = 13
-	SET    = 14
-	LIST   = 15
-	UUID   = 16
+import (
+	"bytes"
+	"sync"
 )
 
-var typeNames = map[int]string{
-	STOP:   "STOP",
-	VOID:   "VOID",
-	BOOL:   "BOOL",
-	BYTE:   "BYTE",
-	DOUBLE: "DOUBLE",
-	I16:    "I16",
-	I32:    "I32",
-	I64:    "I64",
-	STRING: "STRING",
-	STRUCT: "STRUCT",
-	MAP:    "MAP",
-	SET:    "SET",
-	LIST:   "LIST",
-	UUID:   "UUID",
+// pool is a generic sync.Pool wrapper with bells and whistles.
+type pool[T any] struct {
+	pool  sync.Pool
+	reset func(*T)
 }
 
-func (p TType) String() string {
-	if s, ok := typeNames[int(p)]; ok {
-		return s
+// newPool creates a new pool.
+//
+// Both generate and reset are optional.
+// Default generate is just new(T),
+// When reset is nil we don't do any additional resetting when calling get.
+func newPool[T any](generate func() *T, reset func(*T)) *pool[T] {
+	if generate == nil {
+		generate = func() *T {
+			return new(T)
+		}
 	}
-	return "Unknown"
+	return &pool[T]{
+		pool: sync.Pool{
+			New: func() any {
+				return generate()
+			},
+		},
+		reset: reset,
+	}
 }
+
+func (p *pool[T]) get() *T {
+	r := p.pool.Get().(*T)
+	if p.reset != nil {
+		p.reset(r)
+	}
+	return r
+}
+
+func (p *pool[T]) put(r **T) {
+	p.pool.Put(*r)
+	*r = nil
+}
+
+var bufPool = newPool(nil, func(buf *bytes.Buffer) {
+	buf.Reset()
+})
